@@ -1,5 +1,5 @@
 import _, { size } from "lodash";
-import { ColorStop, ErrorHelper, IsType, MapTypeAllTo, Pos, RequiredDeep, Size, } from "../utils/Utilities";
+import { ColorStop, ErrorHelper, IsCanvas, IsType, MapTypeAllTo, Pos, RequiredDeep, Size, } from "../utils/Utilities";
 
 /** 
  * 声明Renderer绘图相关配置的类型, 它用于限制外部传入参数对象.
@@ -184,7 +184,7 @@ interface DrawingSettingsCache {
 }
 
 export class Renderer {
-  #canvas: HTMLCanvasElement | null;
+  #canvas: HTMLCanvasElement | null = null;
   #ctx: CanvasRenderingContext2D | null = null;
   // static #ShapeNameToRenderFn: TypeShapeNameToRenderFunction = {
   //   'Rectangle': (ctx, r) => ctx.rect(r.pos.x, r.pos.y, r.size.width, r.size.height),
@@ -239,11 +239,18 @@ export class Renderer {
 
   constructor(canvas: HTMLCanvasElement | null);
   constructor(canvas: HTMLCanvasElement | null, allowAlpha: boolean);
-  constructor(canvas: HTMLCanvasElement | null, allowAlpha = true) {
-    this.#canvas = canvas;
-    if (!IsType(this.#canvas, 'null'))
-      this.#ctx = this.#canvas.getContext('2d', { alpha: allowAlpha });
-    else ErrorHelper.ClassErrMsg(this.constructor, 'Got a null canvas!');
+  constructor(canvasOrContext: HTMLCanvasElement | CanvasRenderingContext2D | null, allowAlpha = true) {
+    if (IsCanvas(canvasOrContext)) {
+      this.#canvas = canvasOrContext;
+      if (!IsType(this.#canvas, 'null'))
+        this.#ctx = this.#canvas.getContext('2d', { alpha: allowAlpha });
+      else ErrorHelper.ClassErrMsg(this.constructor, 'Got a null canvas!');
+    } else {
+      this.#ctx = canvasOrContext;
+      if (!IsType(this.#ctx, 'null'))
+        this.#canvas = this.#ctx.canvas;
+      else ErrorHelper.ClassErrMsg(this.constructor, 'Got a null context!');
+    }
   }
 
   ApplySettings(this: Renderer, rendererSettings?: TypeRendererSettings) {
