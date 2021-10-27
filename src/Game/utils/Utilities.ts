@@ -1,15 +1,17 @@
 export type Opaque<K, T> = T & { __TYPE__: K };
 
 export class Pos implements Pos {
-  constructor(public x = 0, public y = 0) { }
-}
-
-export class Pos3D implements Pos3D {
-  constructor(public x = 0, public y = 0, public z = 0) { }
+  constructor(public x = 0, public y = 0, public z = 0) {}
 }
 
 export class Size implements Size {
-  constructor(public width = 300, public height = 150) { }
+  public width: number;
+  public height: number;
+  constructor(width: number = 150, height?: number) {
+    this.width = width;
+    if (height) this.height = height;
+    else this.height = width;
+  }
 }
 export class Circle implements Circle {
   constructor(public pos: Pos, public radius: number) {}
@@ -31,12 +33,13 @@ export function GetUUID() {
 export function IsTypePos(v: any): v is Pos {
   return v.hasOwnProperty('x') && v.hasOwnProperty('y');
 }
-export function IsTypePos3D(v: any): v is Pos3D {
-  return v.hasOwnProperty('x') && v.hasOwnProperty('y') && v.hasOwnProperty('z');
-}
 export function IsTypeSize(v: any): v is Size {
   return v.hasOwnProperty('width') && v.hasOwnProperty('height');
 }
+export function IsCanvas(v: any): v is HTMLCanvasElement {
+  return typeof (v as HTMLCanvasElement).getContext !== 'undefined';
+}
+
 
 type Constructor = { new(...args: any[]): any };
 type PrimitiveTypeMap = {

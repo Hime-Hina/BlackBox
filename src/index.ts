@@ -10,7 +10,7 @@ let renderer = new Renderer(canvasElem);
 let bgImg = new Image();
 let imgDrawingSettings: ImageDrawingSettings = {
   dest: {
-    topLeft: { x: 0, y: 0 },
+    topLeft: new Pos(),
   }
 };
 let arcDrawingSettings: ArcDrawingSettings = {

@@ -1,10 +1,6 @@
 interface Pos {
   x: number;
   y: number;
-}
-interface Pos3D {
-  x: number;
-  y: number;
   z: number;
 }
 
