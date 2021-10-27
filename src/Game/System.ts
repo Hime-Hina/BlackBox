@@ -1,11 +1,11 @@
-import { Entity } from "./Game/EntityManager";
+import { Entity } from "./EntityManager";
 
 export abstract class System {
   priority: number = 0;
 
   constructor() {}
 
-  abstract Update(timeStamp: number): void;
+  abstract Update(entities: Entity[]): void;
 
   abstract Filter(entity: Entity): boolean;
 }
