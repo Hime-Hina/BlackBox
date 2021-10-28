@@ -244,12 +244,12 @@ export class Renderer {
       this.#canvas = canvasOrContext;
       if (!IsType(this.#canvas, 'null'))
         this.#ctx = this.#canvas.getContext('2d', { alpha: allowAlpha });
-      else ErrorHelper.ClassErrMsg(this.constructor, 'Got a null canvas!');
+      else ErrorHelper.ErrConstructorArgs(this.constructor, 'Got a null canvas!');
     } else {
       this.#ctx = canvasOrContext;
       if (!IsType(this.#ctx, 'null'))
         this.#canvas = this.#ctx.canvas;
-      else ErrorHelper.ClassErrMsg(this.constructor, 'Got a null context!');
+      else ErrorHelper.ErrConstructorArgs(this.constructor, 'Got a null context!');
     }
   }
 
