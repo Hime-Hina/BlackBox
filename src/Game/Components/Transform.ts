@@ -1,69 +1,86 @@
 import { Component } from "../Component";
 import { ModClamp, ErrorHelper, IsType, IsTypePos } from "../utils/Utilities";
-import { Vector2 } from "../utils/Vector";
+import { Vector3 } from "../utils/Vector";
 
 export interface ITransform {
-  get position(): Vector2;
+  get glbPosition(): Vector3;
+  get locPosition(): Vector3;
   get rotation(): number;
-  get scale(): Vector2;
+  get scale(): Vector3;
 }
 
 @Component.component()
 export class Transform extends Component implements ITransform {
-  protected _locPosition: Vector2;
-  protected _position: Vector2;
+  protected _locPosition: Vector3;
+  protected _glbPosition: Vector3;
   protected _rotation: number;
-  protected _scale: Vector2;
+  protected _scale: Vector3;
 
-  constructor(pos: Pos | Vector2);
-  constructor(pos: Pos | Vector2, scale: Vector2);
-  constructor(pos: Pos | Vector2, rotation: number);
-  constructor(pos: Pos | Vector2, rotation: number, scale: Vector2);
-  constructor(pos: Pos | Vector2, rotOrScl?: number | Vector2, scale?: Vector2) {
+  constructor();
+  constructor(pos: Pos | Vector3);
+  constructor(pos: Pos | Vector3, scale: Vector3);
+  constructor(pos: Pos | Vector3, rotation: number);
+  constructor(pos: Pos | Vector3, rotation: number, scale: Vector3);
+  constructor(pos?: Pos | Vector3, rotOrScl?: number | Vector3, scale?: Vector3) {
     super();
-    this._locPosition = new Vector2();
-    this._position = new Vector2();
+    this._locPosition = new Vector3();
+    this._glbPosition = new Vector3();
     this._rotation = 0;
-    this._scale = new Vector2(1, 1);
+    this._scale = new Vector3(1, 1);
 
-    if ((IsTypePos(pos) || IsType(pos, Vector2))) {
-      this._position.x = pos.x;
-      this._position.y = pos.y;
+    if (IsType(pos, 'undefined')) {
+    } else if (IsTypePos(pos) || IsType(pos, Vector3)) {
+      this._glbPosition.x = pos.x;
+      this._glbPosition.y = pos.y;
     } else {
-      ErrorHelper.ErrConstructorArgs(this.constructor, 'Wrong arg: pos');
+      return ErrorHelper.ErrConstructorArgs(this.constructor, 'Wrong arg: pos');
     }
     if (IsType(rotOrScl, 'undefined')) {
     } else if (IsType(rotOrScl, 'number')) {
       if (IsType(scale, 'undefined')) {
         this._rotation = ModClamp(rotOrScl, 0, 2 * Math.PI);
-      } else if (IsType(scale, Vector2)) {
+      } else if (IsType(scale, Vector3)) {
         this._rotation = ModClamp(rotOrScl, 0, 2 * Math.PI);
         this._scale.x = scale.x;
         this._scale.y = scale.y;
       } else {
-        ErrorHelper.ErrConstructorArgs(this.constructor, 'Wrong arg: scale.');
+        return ErrorHelper.ErrConstructorArgs(this.constructor, 'Wrong arg: scale.');
       }
-    } else if (IsType(rotOrScl, Vector2)) {
+    } else if (IsType(rotOrScl, Vector3)) {
       this._scale.x = rotOrScl.x;
       this._scale.y = rotOrScl.y;
     } else {
-      ErrorHelper.ErrConstructorArgs(this.constructor, 'Wrong arg: rotation.');
+      return ErrorHelper.ErrConstructorArgs(this.constructor, 'Wrong arg: rotation.');
     }
   }
 
-  Translate(dirVec: Vector2) {
-    this._position.add(dirVec);
+  Translate(dirVec: Vector3): this {
+    this._glbPosition.add(dirVec);
+    return this;
   }
-  Rotate(rotation: number) {
+  Rotate(rotation: number): this {
     this._rotation = ModClamp(this._rotation + rotation, 0, 2 * Math.PI);
+    return this;
   }
-  Scale(scale: Vector2) {
-    this._scale.x = scale.x;
-    this._scale.y = scale.y;
+  Scale(scale: number | Vector3): this {
+    if (IsType(scale, 'number')) {
+      this._scale.x = scale;
+      this._scale.y = scale;
+      this._scale.z = scale;
+    } else {
+      this._scale.set(scale);
+    }
+    return this;
   }
 
-  get position() {
-    return this._position;
+  get glbPosition() {
+    return this._glbPosition;
+  }
+  get locPosition() {
+    return this._locPosition;
+  }
+  set rotation(rot: number) {
+    this._rotation = rot;
   }
   get rotation() {
     return this._rotation;
