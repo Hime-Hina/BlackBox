@@ -36,6 +36,12 @@ export class Animation {
   constructor(configs: AnimationConfig) {
     this.#isLoop = configs.loop ? configs.loop : false;
     this.#totalDuration = configs.duration;
+    this.#renderFn = configs.renderFn;
+    this.#timingFn = configs.timingFn || 'linear';
+    this.onStart = configs.onStart;
+    this.onPlay = configs.onPlay;
+    this.onPause = configs.onPause;
+    this.onEnd = configs.onEnd;
     if (configs.values) {
       this.#values = [];
       configs.values.forEach(
@@ -49,14 +55,8 @@ export class Animation {
     } else if (configs.path) {
       this.#path = configs.path;
     } else {
-      ErrorHelper.ErrConstructorArgs(this.constructor, 'The argument must be provided: values or path!');
+      return ErrorHelper.ErrConstructorArgs(this.constructor, 'The argument must be provided: values or path!');
     }
-    this.#renderFn = configs.renderFn;
-    this.#timingFn = configs.timingFn || 'linear';
-    this.onStart = configs.onStart;
-    this.onPlay = configs.onPlay;
-    this.onPause = configs.onPause;
-    this.onEnd = configs.onEnd;
   }
 
   #Reset() {
