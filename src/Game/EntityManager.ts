@@ -1,14 +1,15 @@
 import { Component, ComponentConstructor, ComponentID } from "./Component";
-import { Shape } from "./Components/Shape";
-import { GetUUID, IsType, Opaque } from "./utils/Utilities";
+import { GetUUID, IsType } from "./utils/Utilities";
 
 export class Entity {
-  name: string;
+  uuid: string;
   components: Map<ComponentID, Component>;
+  children: Set<Entity>;
 
-  constructor(name: string, components?: Component[]) {
-    this.name = name;
+  constructor(name: string, components?: Component[], children?: Entity[]) {
+    this.uuid = name;
     this.components = new Map();
+    this.children = new Set<Entity>(children);
     if (!IsType(components, 'undefined')) {
       components.forEach(component => {
         this.components.set(
@@ -36,6 +37,14 @@ export class Entity {
   HasComponent(this: Entity, componentCtor: ComponentConstructor) {
     return this.components.has(Component.GetComponentID(componentCtor));
   }
+
+  AddChild(this: Entity, entity: Entity) {
+    this.children.add(entity);
+    return this;
+  }
+  RemoveChild(this: Entity, childEntity: Entity) {
+    return this.children.delete(childEntity);
+  }
 }
 
 export class EntityManager {
@@ -43,19 +52,33 @@ export class EntityManager {
 
   constructor() {}
 
-  CreateEntity(this: EntityManager, name: string, components?: Component[]) {
+  CreateEntity(this: EntityManager, components?: Component[], children?: Entity[] | string[]) {
     let uuid = GetUUID();
-    this._entities.set(uuid, new Entity(name, components));
-    return uuid;
+    let entity = new Entity(uuid, components);
+    this._entities.set(uuid, entity);
+    return entity;
+  }
+  RemoveEntity(this: EntityManager, entityID?: string) {
+    if (IsType(entityID, 'undefined')) return true;
+    if (this._entities.has(entityID)) {
+      let flag = true;
+      let entity = this._entities.get(entityID);
+      entity!.children.forEach(
+        childEntity => {
+          if (!this.RemoveEntity(childEntity.uuid)) flag = false;
+        }
+      );
+      return this._entities.delete(entityID) && flag;
+    } else return false;
   }
 
   GetEntityByID(this: EntityManager, uuid: string): Entity | undefined {
     return this._entities.get(uuid);
   }
-  GetEntitiesByName(this: EntityManager, name: string) {
+  GetEntitiesByFilters(filter: (entity: Entity) => boolean) {
     let res: Entity[] = [];
     this._entities.forEach((entity, uuid) => {
-      if (entity.name === name) res.push(entity);
+      if (filter(entity)) res.push(entity);
     });
     return res;
   }
