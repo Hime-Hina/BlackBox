@@ -31,10 +31,47 @@ export function GetUUID() {
 }
 
 export function IsTypePos(v: any): v is Pos {
-  return v.hasOwnProperty('x') && v.hasOwnProperty('y');
+  return !IsType(v, 'undefined') && v.hasOwnProperty('x') && v.hasOwnProperty('y') && v.hasOwnProperty('z');
 }
 export function IsTypeSize(v: any): v is Size {
   return v.hasOwnProperty('width') && v.hasOwnProperty('height');
+}
+export function IsNumberArray(v: any): v is number[] {
+  if (Array.isArray(v)) {
+    let i = 0;
+    while (i < v.length) {
+      if (!IsType(v[i], 'number')) return false;
+      ++i;
+    }
+    return true;
+  } else return false;
+}
+export function IsNumberPair(v: any): v is [number, number] {
+  if (Array.isArray(v)) {
+    if (v.length !== 2) return false;
+    let i = 0;
+    while (i < v.length) {
+      if (!IsType(v[i], 'number')) return false;
+      ++i;
+    }
+    return true;
+  } else return false;
+}
+export function IsNumberArray2D(v: any): v is number[][] {
+  if (Array.isArray(v)) {
+    let i = 0, j;
+    while (i < v.length) {
+      if (!IsType(v[i], 'undefined') && Array.isArray(v[i])) {
+        j = 0;
+        while (j < v[i].length) {
+          if (!IsType(v[i][j], 'number')) return false;
+          ++j;
+        }
+      } else return false;
+      ++i;
+    }
+    return true;
+  } else return false;
 }
 export function IsCanvas(v: any): v is HTMLCanvasElement {
   return typeof (v as HTMLCanvasElement).getContext !== 'undefined';
@@ -86,18 +123,24 @@ export type MapTypeAllTo<T, U> = {
 };
 
 export const ErrorHelper = {
-  ClassErrMsg: function (ctor: Function, msg: string) {
-    throw new Error(`class ${ctor.name}:  ${msg}`);
+  ClassErrMsg: function (ctor: Function, method: Function, msg: string) {
+    throw new Error(`${ctor.name}.${method.name}:  ${msg}`);
   },
   ErrConstructorArgs: function (ctor: Function, msg?: string) {
     if (IsType(msg, 'string')) {
-      throw new Error(`class ${ctor.name}: Error arguments! ${msg}`);
+      throw new Error(`<class ${ctor.name}>: Error arguments! ${msg}`);
     } else {
-      throw new Error(`class ${ctor.name}: Error arguments!`);
+      throw new Error(`<class ${ctor.name}>: Error arguments!`);
     }
+  },
+  RuntimeErr: function(msg: string) {
+    throw new Error(msg);
   }
 };
 
+export function RandInt(lowerBound: number, upperBound: number) {
+  return Math.random() * (upperBound - lowerBound) + lowerBound;
+}
 export function Clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(v, max));
 }
