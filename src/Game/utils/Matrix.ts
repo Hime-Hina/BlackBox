@@ -15,7 +15,7 @@ export class Matrix {
   protected static readonly _units = new Map<number, Matrix>();
   protected readonly _totalRow: number = 3;
   protected readonly _totalCol: number = 3;
-  protected readonly _m: number[];
+  protected readonly _m!: number[];
 
   constructor();
   constructor(rows: number);
@@ -45,7 +45,7 @@ export class Matrix {
       this._totalCol = args[0].length;
       data = args;
     } else {
-      ErrorHelper.ErrConstructorArgs(this.constructor, 'Error arguments!');
+     return  ErrorHelper.ErrConstructorArgs(this.constructor, 'Error arguments!');
     }
     this._m = new Array(this._totalRow * this._totalCol);
 
@@ -64,13 +64,13 @@ export class Matrix {
   }
   #AssignByArray(elems: number[][]) {
     if (elems.length > this._totalRow) {
-      ErrorHelper.ClassErrMsg(this.constructor, this.Create, `Too many row array! It should be less than ${this._totalRow}.`);
+      return ErrorHelper.ClassErrMsg(this.constructor, this.Create, `Too many row array! It should be less than ${this._totalRow}.`);
     }
     let i = 0, j;
     while (i < this._totalRow && i < elems.length) {
       j = 0;
       if (elems[i].length > this._totalCol) {
-        ErrorHelper.ClassErrMsg(this.constructor, this.Create, `Too many column array! It should be less than ${this._totalCol}.`);
+       return  ErrorHelper.ClassErrMsg(this.constructor, this.Create, `Too many column array! It should be less than ${this._totalCol}.`);
       }
       while (j < this._totalCol && j < elems[i].length) {
         this._m[i * this._totalCol + j] = elems[i][j];
@@ -87,20 +87,20 @@ export class Matrix {
           console.log('Created by values.');
           this.#AssignByValues(elems);
         } else {
-          ErrorHelper.ClassErrMsg(this.constructor, this.Create, `Too many values! It should be less than ${this._m.length}.`);
+          return ErrorHelper.ClassErrMsg(this.constructor, this.Create, `Too many values! It should be less than ${this._m.length}.`);
         }
       } else if (IsType(elems, Matrix)) {
         if (elems._m.length <= this._m.length) {
           console.log('Created by matrix.');
           this.#AssignByValues(elems._m);
         } else {
-          ErrorHelper.ClassErrMsg(this.constructor, this.Create, `The matrix did not match the scale! A ${this._totalRow}x${this._totalCol} matrix is expected.`);
+         return  ErrorHelper.ClassErrMsg(this.constructor, this.Create, `The matrix did not match the scale! A ${this._totalRow}x${this._totalCol} matrix is expected.`);
         }
       } else if (IsNumberArray2D(elems)) {
         if (elems.length === 1) this.#AssignByValues(elems[0]);
         else this.#AssignByArray(elems);
       } else {
-        ErrorHelper.ClassErrMsg(this.constructor, this.Create, 'Error arguments!');
+        return ErrorHelper.ClassErrMsg(this.constructor, this.Create, 'Error arguments!');
       }
     }
   }
@@ -168,7 +168,7 @@ export class Matrix {
     return Matrix.Unit(scale);
   }
   static Unit(scale: number) {
-    if (scale <= 0) ErrorHelper.ClassErrMsg(Matrix, Matrix.Unit, 'The scale of the matrix can not less than zero!');
+    if (scale <= 0) return ErrorHelper.ClassErrMsg(Matrix, Matrix.Unit, 'The scale of the matrix can not less than zero!');
     if (!Matrix._units.has(scale)) {
       let resMat = new Matrix(scale);
       let i = 0;
@@ -202,7 +202,7 @@ export class Matrix {
 
   static Add(m1: Matrix, m2: Matrix) {
     if (m1._totalRow != m2._totalRow || m1._totalCol != m2._totalCol) {
-      ErrorHelper.ClassErrMsg(this.constructor, Matrix.Add, `The matrix did not match the scale!`);
+     return  ErrorHelper.ClassErrMsg(this.constructor, Matrix.Add, `The matrix did not match the scale!`);
     }
 
     let resMat = new Matrix(m1._totalRow, m1._totalCol);
@@ -215,7 +215,7 @@ export class Matrix {
   }
   static Sub(m1: Matrix, m2: Matrix) {
     if (m1._totalRow != m2._totalRow || m1._totalCol != m2._totalCol) {
-      ErrorHelper.ClassErrMsg(this.constructor, Matrix.Sub, `The matrix did not match the scale!`);
+      return ErrorHelper.ClassErrMsg(this.constructor, Matrix.Sub, `The matrix did not match the scale!`);
     }
 
     let resMat = new Matrix(m1._totalRow, m1._totalCol);
@@ -228,7 +228,7 @@ export class Matrix {
   }
   static Mul(m1: Matrix, m2: Matrix) {
     if (m1._totalCol != m2._totalRow) {
-      ErrorHelper.ClassErrMsg(this.constructor, Matrix.Mul, `The matrix did not match the scale!`);
+      return ErrorHelper.ClassErrMsg(this.constructor, Matrix.Mul, `The matrix did not match the scale!`);
     }
 
     let resMat = new Matrix(m1._totalRow, m2._totalCol);
