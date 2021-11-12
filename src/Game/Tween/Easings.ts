@@ -1,5 +1,6 @@
 export type EasingFunction = (t: number) => number;
 interface _IEasings {
+  toBackSine: EasingFunction;
   linear: EasingFunction,
   InSine: EasingFunction,
   OutSine: EasingFunction,
@@ -37,6 +38,7 @@ export type IEasings = Readonly<_IEasings>;
 const PI = Math.PI;
 
 export const Easings: IEasings = {
+  toBackSine: t => Math.sin(t * Math.PI),
   linear: t => t,
   InSine: t => 1 - Math.cos((PI * t) / 2),
   OutSine: t => Math.sin((PI * t) / 2),
