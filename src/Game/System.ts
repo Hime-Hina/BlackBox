@@ -1,11 +1,16 @@
-import { Entity } from "./EntityManager";
+import { Entity, EntityManager } from "./EntityManager";
 
 export abstract class System {
   priority: number = 0;
+  protected _entityManager: EntityManager;
 
-  constructor() {}
+  constructor(entityManager: EntityManager) {
+    this._entityManager = entityManager;
+  }
 
-  abstract Update(entities: Entity[]): void;
+  abstract Start(...args: any[]): void;
+
+  abstract Update(time: number, deltaTime?: number): void;
 
   abstract Filter(entity: Entity): boolean;
 }
