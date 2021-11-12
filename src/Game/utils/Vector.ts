@@ -6,6 +6,9 @@ export class Vector3 {
   public static readonly unitX = new Vector3(1, 0, 0);
   public static readonly unitY = new Vector3(0, 1, 0);
   public static readonly unitZ = new Vector3(0, 0, 1);
+  public static readonly unitNX = new Vector3(-1, 0, 0);
+  public static readonly unitNY = new Vector3(0, -1, 0);
+  public static readonly unitNZ = new Vector3(0, 0, -1);
 
   public x: number = 0;
   public y: number = 0;
@@ -36,10 +39,18 @@ export class Vector3 {
   }
 
 
-  set(v: Vector3): this {
-    this.x = v.x;
-    this.y = v.y;
-    this.z = v.z;
+  set(vecOrNum: Vector3 | number, y?: number, z?: number): this {
+    if (IsType(vecOrNum, Vector3)) {
+      this.x = vecOrNum.x;
+      this.y = vecOrNum.y;
+      this.z = vecOrNum.z;
+    } else if (IsType(vecOrNum, 'number') && IsType(y, 'number')) {
+      this.x = vecOrNum;
+      this.y = y;
+      if (IsType(z, 'number')) {
+        this.z = z;
+      } else this.z = 0;
+    }
     return this;
   }
 
