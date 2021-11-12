@@ -276,12 +276,12 @@ export class Renderer {
     return this;
   }
 
-  DrawSegment(this: Renderer, startPos: Pos, endPos: Pos, rendererSettings?: TypeRendererSettings) {
+  DrawSegment(this: Renderer, startPos: Pos, dir: Pos, rendererSettings?: TypeRendererSettings) {
     this.#ctx.save();
 
     this.#ctx.beginPath();
     this.#ctx.moveTo(startPos.x, startPos.y);
-    this.#ctx.lineTo(endPos.x, endPos.y);
+    this.#ctx.lineTo(startPos.x + dir.x, startPos.y + dir.y);
 
     this.ApplySettings(rendererSettings);
     this.#ctx.stroke();
