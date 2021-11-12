@@ -59,7 +59,7 @@ export class Transform extends Component implements ITransform {
     return this;
   }
   Rotate(rotation: number): this {
-    this._rotation = ModClamp(this._rotation + rotation, 0, 2 * Math.PI);
+    this._rotation = ModClamp(this._rotation + rotation, -Math.PI, Math.PI);
     return this;
   }
   Scale(scale: number | Vector3): this {
@@ -79,8 +79,8 @@ export class Transform extends Component implements ITransform {
   get locPosition() {
     return this._locPosition;
   }
-  set rotation(rot: number) {
-    this._rotation = rot;
+  set rotation(rotation: number) {
+    this._rotation = ModClamp(rotation, -Math.PI, Math.PI);
   }
   get rotation() {
     return this._rotation;
