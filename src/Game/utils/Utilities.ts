@@ -1,7 +1,7 @@
 export type Opaque<K, T> = T & { __TYPE__: K };
 
 export class Pos implements Pos {
-  constructor(public x = 0, public y = 0, public z = 0) {}
+  constructor(public x = 0, public y = 0, public z = 0) { }
 }
 
 export class Size implements Size {
@@ -14,10 +14,10 @@ export class Size implements Size {
   }
 }
 export class Circle implements Circle {
-  constructor(public pos: Pos, public radius: number) {}
+  constructor(public pos: Pos, public radius: number) { }
 }
 export class ColorStop {
-  constructor(public offset: number, public color: string) {}
+  constructor(public offset: number, public color: string) { }
 }
 
 export function GetUUID() {
@@ -133,17 +133,18 @@ export const ErrorHelper = {
       throw new Error(`<class ${ctor.name}>: Error arguments!`);
     }
   },
-  RuntimeErr: function(msg: string) {
+  RuntimeErr: function (msg: string) {
     throw new Error(msg);
   }
 };
 
 export function RandInt(lowerBound: number, upperBound: number) {
-  return Math.random() * (upperBound - lowerBound) + lowerBound;
+  return Math.floor(Math.random() * (upperBound - lowerBound) + lowerBound);
 }
 export function Clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(v, max));
 }
 export function ModClamp(v: number, lowerBound: number, upperBound: number) {
-  return ((v - upperBound) % (upperBound - lowerBound)) + lowerBound;
+  let len = upperBound - lowerBound;
+  return ((v - upperBound) % len + len) % len + lowerBound;
 }
