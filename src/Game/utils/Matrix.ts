@@ -11,6 +11,8 @@ export function IsMatrixArray(v: any): v is Matrix[] {
   } else return false;
 }
 
+// TODO: 修改为TypedArray泛型类
+
 export class Matrix {
   protected static readonly _units = new Map<number, Matrix>();
   protected readonly _totalRow: number = 3;
@@ -104,12 +106,24 @@ export class Matrix {
       }
     }
   }
+  Fill(this: Matrix, val: number) {
+    let i = 0;
+    while (i < this._m.length) {
+      this._m[i] = val;
+      ++i;
+    }
+    return this;
+  }
+  selfIncrese(this: Matrix, row: number, col: number) {
+    ++this._m[row * this._totalRow + col];
+    return this;
+  }
   set(this: Matrix, row: number, col: number, val: number) {
-    this._m[row * this._totalRow + col] = val;
+    this._m[row * this._totalCol + col] = val;
     return this;
   }
   m(this: Matrix, row: number, col: number) {
-    return this._m[row * this._totalRow + col];
+    return this._m[row * this._totalCol + col];
   }
 
   get row() {
