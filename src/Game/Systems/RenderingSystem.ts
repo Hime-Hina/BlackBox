@@ -2,23 +2,30 @@ import { System } from '../System';
 import '../Components/Renderable';
 import { Renderable } from '../Components/Renderable';
 import { Transform } from '../Components/Transform';
-import { Entity } from '../EntityManager';
+import { Entity, EntityManager } from '../EntityManager';
 import { Renderer } from '../Renderer/Renderer';
+import { Vector3 } from '../utils/Vector';
 
 export class RenderingSystem extends System {
   protected _offScreenCanvas: HTMLCanvasElement | null = null;
   protected _offScreenRenderer: Renderer;
   protected _renderer: Renderer;
 
-  constructor(canvas: HTMLCanvasElement | null) {
-    super();
+  constructor(entityManager: EntityManager, canvas: HTMLCanvasElement | null, origin?: Vector3) {
+    super(entityManager);
     if (canvas) {
       this._offScreenCanvas = canvas.cloneNode() as HTMLCanvasElement;
       this._offScreenCanvas.id = "off-screen-canvas";
     }
     this._offScreenRenderer = new Renderer(this._offScreenCanvas);
     this._renderer = new Renderer(canvas);
+    if (origin) {
+      this._offScreenRenderer.Translate(origin);
+      // this._renderer.Translate(origin);
+    }
   }
+
+  Start() {}
 
   #With = (entity: Entity) => {
     let transfrom = entity.GetComponent(Transform) as Transform;
@@ -38,7 +45,8 @@ export class RenderingSystem extends System {
     }
   }
 
-  Update(shapeEntities: Entity[]) {
+  Update(time: number) {
+    let shapeEntities = this._entityManager.GetEntitiesByFilters(this.Filter);
     if (this._offScreenCanvas) {
       this._offScreenRenderer.ClearCanvas();
 
