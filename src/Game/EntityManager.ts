@@ -2,14 +2,14 @@ import { Component, ComponentConstructor, ComponentID } from "./Component";
 import { GetUUID, IsType } from "./utils/Utilities";
 
 export class Entity {
+  isActive: boolean = true;
+  isDestroyed: boolean = false;
   uuid: string;
   components: Map<ComponentID, Component>;
-  children: Set<Entity>;
 
-  constructor(name: string, components?: Component[], children?: Entity[]) {
+  constructor(name: string, components?: Component[]) {
     this.uuid = name;
     this.components = new Map();
-    this.children = new Set<Entity>(children);
     if (!IsType(components, 'undefined')) {
       components.forEach(component => {
         this.components.set(
@@ -37,14 +37,6 @@ export class Entity {
   HasComponent(this: Entity, componentCtor: ComponentConstructor) {
     return this.components.has(Component.GetComponentID(componentCtor));
   }
-
-  AddChild(this: Entity, entity: Entity) {
-    this.children.add(entity);
-    return this;
-  }
-  RemoveChild(this: Entity, childEntity: Entity) {
-    return this.children.delete(childEntity);
-  }
 }
 
 export class EntityManager {
@@ -52,24 +44,33 @@ export class EntityManager {
 
   constructor() {}
 
-  CreateEntity(this: EntityManager, components?: Component[], children?: Entity[] | string[]) {
+  CreateEntity(this: EntityManager, components?: Component[]) {
     let uuid = GetUUID();
     let entity = new Entity(uuid, components);
     this._entities.set(uuid, entity);
     return entity;
   }
-  RemoveEntity(this: EntityManager, entityID?: string) {
-    if (IsType(entityID, 'undefined')) return true;
-    if (this._entities.has(entityID)) {
-      let flag = true;
-      let entity = this._entities.get(entityID);
-      entity!.children.forEach(
-        childEntity => {
-          if (!this.RemoveEntity(childEntity.uuid)) flag = false;
+  RemoveEntity(this: EntityManager, entityOrID: string | Entity) {
+    if (IsType(entityOrID, 'string')) {
+      if (this._entities.has(entityOrID)) {
+        this._entities.get(entityOrID)!.components.clear();
+        return this._entities.delete(entityOrID);
+      } else return false;
+    } else {
+      if (this._entities.has(entityOrID.uuid)) {
+        this._entities.get(entityOrID.uuid)!.components.clear();
+        return this._entities.delete(entityOrID.uuid);
+      } else return false;
+    }
+  }
+  RemoveDestroyed() {
+    this._entities.forEach(
+      entity => {
+        if (entity.isDestroyed) {
+          this.RemoveEntity(entity);
         }
-      );
-      return this._entities.delete(entityID) && flag;
-    } else return false;
+      }
+    );
   }
 
   GetEntityByID(this: EntityManager, uuid: string): Entity | undefined {
@@ -77,8 +78,8 @@ export class EntityManager {
   }
   GetEntitiesByFilters(filter: (entity: Entity) => boolean) {
     let res: Entity[] = [];
-    this._entities.forEach((entity, uuid) => {
-      if (filter(entity)) res.push(entity);
+    this._entities.forEach((entity) => {
+      if (entity.isActive && filter(entity)) res.push(entity);
     });
     return res;
   }
