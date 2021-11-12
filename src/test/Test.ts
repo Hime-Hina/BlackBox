@@ -1,5 +1,11 @@
+import { GameMap, ObjInMap } from "../Pacman/Components/ObjInMap";
+import { Renderable } from "../Game/Components/Renderable";
+import { Transform } from "../Game/Components/Transform";
+import { EntityManager } from "../Game/EntityManager";
 import { Renderer } from "../Game/Renderer/Renderer";
-import { Pos } from "../Game/utils/Utilities";
+import { RenderingSystem } from "../Game/Systems/RenderingSystem";
+import { Pos, Size } from "../Game/utils/Utilities";
+import { Vector3 } from "../Game/utils/Vector";
 
 let canvas = document.getElementById('canvas') as HTMLCanvasElement;
 let renderer = new Renderer(canvas);
@@ -7,20 +13,23 @@ canvas.width = 900;
 canvas.height = 600;
 
 export function Test1() {
-  if (renderer.ctx) {
-    renderer.ctx.strokeStyle = 'red';
-    renderer.ctx.moveTo(70, 70);
-    renderer.ctx.lineTo(100, 200);
-    renderer.ctx.stroke();
+  let path = new Path2D();
+  path.moveTo(8, 8);
+  path.lineTo(80, 10);
+  path.lineTo(30, 80);
+  path.closePath();
 
-    renderer.ctx.save();
-    renderer.ctx.strokeStyle = 'yellow';
-    renderer.ctx.moveTo(200, 300);
-    renderer.ctx.lineTo(200, 100);
-    renderer.ctx.stroke();
-    renderer.ctx.restore();
+  renderer.DrawPath(path, {
+    style: { fill: 'transparent', stroke: 'red' },
+    path: {width: 8}
+  });
+}
 
-    renderer.ctx.lineTo(0, 0);
-    renderer.ctx.stroke();
-  }
+export function Test2() {
+  renderer.Translate(new Pos(80, 80));
+  renderer.Rotate(-Math.PI / 3);
+  renderer.DrawRect({
+    center: new Vector3(),
+    size: new Size(200, 100)
+  });
 }

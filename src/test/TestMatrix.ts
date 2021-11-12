@@ -36,4 +36,13 @@ export class MatrixTester {
     console.log(m2 === m3);
     console.log(Matrix.Equals(m2, m3));
   }
+  static TestGetSet() {
+    let m = new Matrix(21, 41);
+    for (let i = 0; i < 10; ++i) {
+      for (let j = 0; j < 20; ++j) {
+        m.set(i, j, 8);
+      }
+    }
+    m.Print();
+  }
 }
