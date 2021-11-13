@@ -100,7 +100,7 @@ export class Tween {
     this.#easingObj = easingObj;
     this.#lastEasingObj = _.cloneDeep(this.#easingObj);
     this.#fromObj = _.cloneDeep(this.#easingObj);
-    if (this.#isToObjSet) this.#stateID = Tween.state2ID['init'];
+    // if (this.#isToObjSet) this.#stateID = Tween.state2ID['init'];
     return this;
   }
   To(toObj: EasingObject, lasts?: number) {
@@ -109,14 +109,7 @@ export class Tween {
     this.#toObjEntries = Object.entries(toObj);
 
     if (lasts) this.#totalDuration = lasts;
-    if (this.#isFromObjSet) this.#stateID = Tween.state2ID['init'];
-    return this;
-  }
-  UnsetToObj() {
-    this.#isToObjSet = false;
-    this.#toObj = undefined;
-    this.#toObjEntries = undefined;
-    this.#stateID = Tween.state2ID['none'];
+    // if (this.#isFromObjSet) this.#stateID = Tween.state2ID['init'];
     return this;
   }
 
@@ -167,37 +160,43 @@ export class Tween {
 
   Reset() {
     this.#stateID = Tween.state2ID['init'];
-    if (this.#easingObj && this.#lastEasingObj && this.#fromObj) {
-      for (let prop in this.#toObj) {
-        this.#easingObj[prop] = this.#fromObj[prop];
-        this.#lastEasingObj[prop] = this.#fromObj[prop];
-      }
-    }
     this.#nowDuration = 0;
-    this.#nowTimeStamp = 0;
-    this.#prevTimeStamp = 0;
   }
-  #Loop = () => {
+  Play() {
     if (!this.CanChangeStateTo('play')) return;
 
-    this.#nowTimeStamp = window.performance.now();
-    this.#nowDuration += this.#nowTimeStamp - this.#prevTimeStamp;
-    this.#prevTimeStamp = this.#nowTimeStamp;
-
-    if (this.#nowDuration >= this.#totalDuration) {
-      this.#stateID = Tween.state2ID['end'];
-      this.#Ease(1);
-      this.#onEnd();
-      if (this.#isLoop) {
-        this.Reset();
-        this.Play();
-      } 
-    } else {
-      this.#Ease(this.#nowDuration / this.#totalDuration);
-      this.#animFrameRequestID = window.requestAnimationFrame(this.#Loop);
-    }
-    this.#onUpdate(this.#easingObj, this.#lastEasingObj);
+    this.#stateID = Tween.state2ID['play'];
+    this.#prevTimeStamp = window.performance.now();
+    this.#animFrameRequestID = window.requestAnimationFrame(this.#Loop);
+    this.#onStart();
+    return this;
   }
+  Pause() {
+    if (!this.CanChangeStateTo('pause')) return;
+
+    this.#stateID = Tween.state2ID['pause'];
+    this.#onPause();
+    window.cancelAnimationFrame(this.#animFrameRequestID);
+    return this;
+  }
+  Stop() {
+    if (!this.CanChangeStateTo('init')) return;
+
+    this.#stateID = Tween.state2ID['init'];
+    this.#nowDuration = 0;
+    window.cancelAnimationFrame(this.#animFrameRequestID);
+    return this;
+  }
+  Animate() {
+    if (this.#fromObj && this.#toObj) {
+      this.Reset();
+    }
+  }
+  StopAnimating() {
+    this.#stateID = Tween.state2ID['none'];
+    this.#nowDuration = 0;
+  }
+
   #Ease(ratio: number) {
     if (!this.#easingObj || !this.#lastEasingObj || !this.#fromObj) return;
     if (this.#toObj && this.#toObjEntries) {
@@ -221,7 +220,27 @@ export class Tween {
       const point = this.#path.getPointAtLength(this.#easingFn(ratio) * length);
     }
   }
+  #Loop = () => {
+    if (!this.CanChangeStateTo('play')) return;
 
+    this.#nowTimeStamp = window.performance.now();
+    this.#nowDuration += this.#nowTimeStamp - this.#prevTimeStamp;
+    this.#prevTimeStamp = this.#nowTimeStamp;
+
+    if (this.#nowDuration >= this.#totalDuration) {
+      this.#stateID = Tween.state2ID['end'];
+      this.#Ease(1);
+      this.#onEnd();
+      if (this.#isLoop) {
+        this.Reset();
+        this.Play();
+      } 
+    } else {
+      this.#Ease(this.#nowDuration / this.#totalDuration);
+      this.#animFrameRequestID = window.requestAnimationFrame(this.#Loop);
+    }
+    this.#onUpdate(this.#easingObj, this.#lastEasingObj);
+  }
   Update(timeStamp: number) {
     if (this.#stateID !== Tween.state2ID['play']) {
       this.#prevTimeStamp = timeStamp;
@@ -249,34 +268,6 @@ export class Tween {
     }
     this.#onUpdate(this.#easingObj, this.#lastEasingObj);
 
-    return this;
-  }
-
-  Play() {
-    if (!this.CanChangeStateTo('play')) return;
-
-    this.#stateID = Tween.state2ID['play'];
-    this.#prevTimeStamp = window.performance.now();
-    this.#animFrameRequestID = window.requestAnimationFrame(this.#Loop);
-    this.#onStart();
-    return this;
-  }
-
-  Pause() {
-    if (!this.CanChangeStateTo('pause')) return;
-
-    this.#stateID = Tween.state2ID['pause'];
-    this.#onPause();
-    window.cancelAnimationFrame(this.#animFrameRequestID);
-    return this;
-  }
-
-  Stop() {
-    if (!this.CanChangeStateTo('init')) return;
-
-    this.#stateID = Tween.state2ID['init'];
-    this.#nowDuration = 0;
-    window.cancelAnimationFrame(this.#animFrameRequestID);
     return this;
   }
 
