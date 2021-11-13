@@ -25,36 +25,34 @@ export class RenderingSystem extends System {
     }
   }
 
-  Start() {}
+  Start() { }
 
   #With = (entity: Entity) => {
-    let transfrom = entity.GetComponent(Transform) as Transform;
     let shape = entity.GetComponent(Renderable) as Renderable;
-    if (transfrom) {
-      this._offScreenRenderer.Translate(transfrom.glbPosition);
-      this._offScreenRenderer.Scale(transfrom.scale);
-      this._offScreenRenderer.Rotate(transfrom.rotation);
-      if (shape) {
-        this._offScreenRenderer.DrawPath(shape.path, shape.rendererSettings);
-        if (shape.img)
-          this._offScreenRenderer.DrawImage(
-            shape.img,
-            undefined,
-            shape.rendererSettings);
-      }
+    this._offScreenRenderer.Translate(entity.transform.glbPosition);
+    this._offScreenRenderer.Scale(entity.transform.scale);
+    this._offScreenRenderer.Rotate(entity.transform.rotation);
+    if (shape) {
+      this._offScreenRenderer.DrawPath(shape.path, shape.rendererSettings);
+      if (shape.img)
+        this._offScreenRenderer.DrawImage(
+          shape.img,
+          undefined,
+          shape.rendererSettings);
     }
   }
 
   Update(time: number) {
-    let shapeEntities = this._entityManager.GetEntitiesByFilters(this.Filter);
+    this._filtered = this._entityManager.GetEntitiesByFilters(this.Filter);
     if (this._offScreenCanvas) {
       this._offScreenRenderer.ClearCanvas();
 
       let i = 0;
-      while (i < shapeEntities.length) {
-        this._offScreenRenderer.With(this.#With, shapeEntities[i]);
-        ++i;
-      }
+      this._filtered.forEach(
+        entity => {
+          this._offScreenRenderer.With(this.#With, entity);
+        }
+      );
 
       this._renderer.ClearCanvas();
       this._renderer.DrawImage(this._offScreenCanvas);
@@ -62,6 +60,6 @@ export class RenderingSystem extends System {
   }
 
   Filter(entity: Entity) {
-    return entity.HasComponent(Transform) && entity.HasComponent(Renderable);
+    return entity.HasComponent(Renderable);
   }
 }

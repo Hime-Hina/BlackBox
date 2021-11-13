@@ -74,7 +74,7 @@ export class Pacman extends Game {
     super();
 
     this.#canvas = canvas;
-    this.#cellSize = new Size(3 * this.#pacmanRadius, 3 * this.#pacmanRadius);
+    this.#cellSize = new Size(4 * this.#pacmanRadius, 4 * this.#pacmanRadius);
     this.#mapSize = new Size(
       Math.floor(this.#canvas.width / this.#cellSize.width / 2),
       Math.floor(this.#canvas.height / this.#cellSize.height / 2)
@@ -99,9 +99,8 @@ export class Pacman extends Game {
       }).To({
         startAngle: Pacman.#mouthOpenAngle,
         endAngle: 2 * Math.PI - Pacman.#mouthOpenAngle,
-      }, 800).Loop(
-        true
-      ).Easing(
+      }, 300)
+      .Easing(
         Easings.toBackSine
       ).OnUpdate((obj: { startAngle: number, endAngle: number }) => {
         (this.#pacman.GetComponent(Renderable) as Renderable)
@@ -110,26 +109,28 @@ export class Pacman extends Game {
 
     this.#entityManager = new EntityManager();
     ObjInMap.RegisterMapPos(new MapPos(1, 1));
-    for (let i = 0; i < 30; ++i) {
-      let transfrom = new Transform();
-      this.#entityManager.CreateEntity(
-        [
-          transfrom,
-          new Renderable(Renderable.Rect(new Size(10, 10), new Vector3(-5, -5))),
-          new ObjInMap(this.#maze, true).AssignPosRandomly(),
-          new Animation(
-            [
-              new Tween().From({
-                rot: 0,
-              }).To({
-                rot: 2 * Math.PI
-              }, 5000).Easing(Easings.linear).Loop(true)
-              .OnUpdate((obj: {rot:number}) => transfrom.rotation = obj.rot)
-            ]
-          ),
-        ]
-      );
-    }
+    this.#maze.availMapPos.forEach(
+      pos => {
+        let transfrom = new Transform();
+        this.#entityManager.CreateEntity(
+          [
+            transfrom,
+            new Renderable(Renderable.Rect(new Size(10, 10), new Vector3(-5, -5))),
+            new ObjInMap(this.#maze, true, pos),
+            new Animation(
+              [
+                new Tween().From({
+                  rot: 0,
+                }).To({
+                  rot: 2 * Math.PI
+                }, 5000).Easing(Easings.linear).Loop(true)
+                .OnUpdate((obj: {rot:number}) => transfrom.rotation = obj.rot)
+              ]
+            ),
+          ]
+        );
+      }
+    );
     this.#pacman = this.#entityManager.CreateEntity(
       [
         new Transform(),
@@ -189,40 +190,49 @@ export class Pacman extends Game {
     return () => {
       if (this.#walkTween.IsPlaying() || this.#rotTween.IsPlaying()) return;
 
-      let transfrom = this.#pacman.GetComponent(Transform) as Transform;
-      let movable = this.#pacman.GetComponent(ObjInMap) as ObjInMap;
+      let objInMapComp = this.#pacman.GetComponent(ObjInMap) as ObjInMap;
+      let isOnRect = false;
 
-      if (transfrom && movable && movable.CanMove(key)) {
+      if (objInMapComp && objInMapComp.CanMove(key)) {
         this.#rotTween.From({
           rot: 0,
         }).To({
-          rot: Pacman.#curDirNxtKey2Rotation[Pacman.GetDirection(transfrom.rotation)][key]
+          rot: Pacman.#curDirNxtKey2Rotation[
+            Pacman.GetDirection(this.#pacman.transform.rotation)
+          ][key]
         }, 200)
         .Easing(Easings.InOutExpo)
         .OnUpdate((obj: { rot: number }, lastObj: { rot: number }) => {
-          transfrom.Rotate(obj.rot - lastObj.rot);
-        });
-        movable.Move(key);
+          this.#pacman.transform.Rotate(obj.rot - lastObj.rot);
+        }).Animate();
+
+        objInMapComp.Move(key);
+        isOnRect = this.#rectsInMap.has(objInMapComp.row)
+            && this.#rectsInMap.get(objInMapComp.row)!.has(objInMapComp.col);
         this.#walkTween.From({
-          x: transfrom.glbPosition.x,
-          y: transfrom.glbPosition.y,
+          x: this.#pacman.transform.glbPosition.x,
+          y: this.#pacman.transform.glbPosition.y,
         }).To({
-          x: (movable.col + 0.5) * this.#cellSize.width,
-          y: (movable.row + 0.5) * this.#cellSize.height,
+          x: (objInMapComp.col + 0.5) * this.#cellSize.width,
+          y: (objInMapComp.row + 0.5) * this.#cellSize.height,
         }, 200)
         .Easing(Easings.InOutSine)
+        .OnStart(() => {
+          if (isOnRect) {
+            this.#mouthTween.Animate();
+          }
+        })
         .OnUpdate((obj: { x: number, y: number }) => {
-          transfrom.glbPosition.x = obj.x;
-          transfrom.glbPosition.y = obj.y;
+          this.#pacman.transform.glbPosition.x = obj.x;
+          this.#pacman.transform.glbPosition.y = obj.y;
         })
         .OnEnd(() => {
-          if (this.#rectsInMap.has(movable.row)
-              && this.#rectsInMap.get(movable.row)!.has(movable.col)) {
-            this.#rectsInMap.get(movable.row)!.get(movable.col)!.isDestroyed = true;
-            ObjInMap.UnregisterMapPos(new MapPos(movable.row, movable.col));
-            this.#rectsInMap.get(movable.row)!.delete(movable.col);
+          if (isOnRect) {
+            this.#rectsInMap.get(objInMapComp.row)!.get(objInMapComp.col)!.isDestroyed = true;
+            ObjInMap.UnregisterMapPos(new MapPos(objInMapComp.row, objInMapComp.col));
+            this.#rectsInMap.get(objInMapComp.row)!.delete(objInMapComp.col);
           }
-        });
+        }).Animate();
       }
     }
   }
@@ -230,10 +240,9 @@ export class Pacman extends Game {
   Start() {
     this.#entityManager.GetEntitiesByFilters(e => e.HasComponent(ObjInMap)).forEach(
       e => {
-        let transfrom = e.GetComponent(Transform) as Transform;
         let objInMap = e.GetComponent(ObjInMap) as ObjInMap;
-        transfrom.glbPosition.x = (objInMap.col + 0.5) * this.#cellSize.width;
-        transfrom.glbPosition.y = (objInMap.row + 0.5) * this.#cellSize.height;
+        e.transform.glbPosition.x = (objInMap.col + 0.5) * this.#cellSize.width;
+        e.transform.glbPosition.y = (objInMap.row + 0.5) * this.#cellSize.height;
         if (e !== this.#pacman) {
           if (this.#rectsInMap.has(objInMap.row)) {
             this.#rectsInMap.get(objInMap.row)!.set(objInMap.col, e);

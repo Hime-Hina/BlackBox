@@ -39,6 +39,7 @@ export class GameMap {
   #pathSize: Size;
   #map: Matrix;
   #path: Path2D;
+  #availMapPos: MapPos[] = [];
   static readonly dirR = [0, -1, 0, 1];
   static readonly dirC = [1, 0, -1, 0];
   static readonly dir2Index: Direction = {
@@ -67,6 +68,9 @@ export class GameMap {
   }
   get pathSize() {
     return this.#pathSize;
+  }
+  get availMapPos() {
+    return this.#availMapPos;
   }
 
   IsInMap(row: number, col: number) {
@@ -173,6 +177,7 @@ export class GameMap {
       j = 0;
       while (j < this.#size.width) {
         this.#map.set(2 * i + 1, 2 * j + 1, 1);
+        this.#availMapPos.push(new MapPos(2 * i + 1, 2 * j + 1));
         ++j;
       }
       ++i;
@@ -182,21 +187,26 @@ export class GameMap {
     let row = RandInt(0, this.#size.height),
         col = RandInt(0, this.#size.width),
         randIndx = 0;
-    let randEdge: [Vector3, Vector3] = [new Vector3(), new Vector3()];
+    let randEdge: [Vector3, Vector3];
     vertices.set(row, col, 1);
+    this.#availMapPos.push(new MapPos(row, col));
     while (cnt < tot) {
       this.#PushEdge(edges, row, col);
 
       do {
         randIndx = RandInt(0, edges.length);
-        randEdge[0].x = edges[randIndx][0].x;
-        randEdge[0].y = edges[randIndx][0].y;
-        randEdge[1].x = edges[randIndx][1].x;
-        randEdge[1].y = edges[randIndx][1].y;
-        edges.splice(randIndx, 1);
+        randEdge = edges.splice(randIndx, 1)[0];
       } while (vertices.m(randEdge[0].x, randEdge[0].y) === vertices.m(randEdge[1].x, randEdge[1].y));
 
-      this.#map.set(randEdge[0].x + randEdge[1].x + 1, randEdge[0].y + randEdge[1].y + 1, 1);
+      this.#map.set(
+        randEdge[0].x + randEdge[1].x + 1,
+        randEdge[0].y + randEdge[1].y + 1,
+        1
+      );
+      this.#availMapPos.push(new MapPos(
+        randEdge[0].x + randEdge[1].x + 1,
+        randEdge[0].y + randEdge[1].y + 1,
+      ));
       if (vertices.m(randEdge[0].x, randEdge[0].y) === 0) {
         row = randEdge[0].x, col = randEdge[0].y;
       } else {
@@ -209,7 +219,7 @@ export class GameMap {
     this.#size.width = 2 * this.#size.width + 1;
     this.#size.height = 2 * this.#size.height + 1;
 
-    this.#BreakWallsRandomly(0.6);
+    this.#BreakWallsRandomly(0.8);
 
     let visted = new Matrix(this.#map.row, this.#map.col);
     i = 0;
@@ -249,7 +259,7 @@ export class ObjInMap extends Component {
   #gameMap: GameMap;
   private static mapPosPool: Map<number, Set<number>> = new Map();
 
-  constructor(gampMap: GameMap, isFixed?: boolean, initialPos?: {row: number, col: number}) {
+  constructor(gampMap: GameMap, isFixed?: boolean, initialPos?: MapPos) {
     super();
     this.#gameMap = gampMap;
     if (IsType(isFixed, 'boolean')) this.#isFixed = isFixed;

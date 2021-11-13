@@ -1,13 +1,14 @@
 import { InputCom } from "../Components/InputCom";
 import { Entity, EntityManager } from "../EntityManager";
 import { System } from "../System";
+import { Queue } from "../utils/Queue";
 import { Vector3 } from "../utils/Vector";
 
 export class InputSystem extends System {
   static #isMouseDown = false;
   static #curMousePos = new Vector3();
   static #mouseEvent: MouseEvent;
-  static #isKeyDown: Set<string>= new Set();
+  static #isKeyDown: Set<string> = new Set();
 
   constructor(entityManager: EntityManager) {
     super(entityManager);
@@ -28,14 +29,15 @@ export class InputSystem extends System {
       InputSystem.#isKeyDown.delete(ev.key);
     });
     window.addEventListener('keypress', (ev) => {
-      InputSystem.#isKeyDown.add(ev.key);
+      if (!InputSystem.#isKeyDown.has(ev.key))
+        InputSystem.#isKeyDown.add(ev.key);
     });
   }
 
   Update(timeStamp: number) {
-    let filtered = this._entityManager.GetEntitiesByFilters(this.Filter);
+    this._filtered = this._entityManager.GetEntitiesByFilters(this.Filter);
     InputSystem.#isKeyDown.forEach((key) => {
-      filtered.forEach(entity => {
+      this._filtered.forEach(entity => {
         let handler = (entity.GetComponent(InputCom) as InputCom).inputEventHandlers.get(key);
         if (handler) handler(key);
       });
