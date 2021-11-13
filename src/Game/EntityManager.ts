@@ -1,4 +1,6 @@
 import { Component, ComponentConstructor, ComponentID } from "./Component";
+import { Transform } from "./Components/Transform";
+import { FilterFn } from "./System";
 import { GetUUID, IsType } from "./utils/Utilities";
 
 export class Entity {
@@ -6,17 +8,26 @@ export class Entity {
   isDestroyed: boolean = false;
   uuid: string;
   components: Map<ComponentID, Component>;
+  transform: Transform = new Transform();
 
   constructor(name: string, components?: Component[]) {
     this.uuid = name;
     this.components = new Map();
+    let hasTransform = false;
     if (!IsType(components, 'undefined')) {
-      components.forEach(component => {
+      for (const component of components) {
+        if (IsType(component, Transform)) {
+          this.transform = component;
+          hasTransform = true;
+        }
         this.components.set(
           Component.GetComponentID(component.constructor as ComponentConstructor),
           component
         );
-      });
+      }
+    }
+    if (!hasTransform) {
+      this.components.set(Component.GetComponentID(Transform), this.transform);
     }
   }
 
@@ -76,10 +87,10 @@ export class EntityManager {
   GetEntityByID(this: EntityManager, uuid: string): Entity | undefined {
     return this._entities.get(uuid);
   }
-  GetEntitiesByFilters(filter: (entity: Entity) => boolean) {
-    let res: Entity[] = [];
+  GetEntitiesByFilters(filter: FilterFn) {
+    let res: Set<Entity> = new Set();
     this._entities.forEach((entity) => {
-      if (entity.isActive && filter(entity)) res.push(entity);
+      if (entity.isActive && filter(entity)) res.add(entity);
     });
     return res;
   }
