@@ -1,6 +1,7 @@
 import { Component } from "../Component";
+import { Entity } from "../EntityManager";
 
-type InputEventHandler = (key?: string) => void;
+type InputEventHandler = (entity: Entity, key?: string) => void;
 export interface Key2InputEventHandler {
   [key: string]: InputEventHandler;
 };

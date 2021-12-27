@@ -3,7 +3,7 @@ import { ErrorHelper } from "../utils/Utilities";
 import { EasingFunction, Easings, IEasings } from "./Easings";
 
 export type TweenStates = 'none' | 'init' | 'play' | 'pause' | 'end';
-export type TweenEventFn = (...args: any[]) => void;
+export type TweenEventFn = (thisTween: Tween, ...args: any[]) => void;
 export type EasingObject = { [prop: string | number | symbol]: number };
 export interface TweenConfig {
   loop?: boolean;
@@ -90,7 +90,7 @@ export class Tween {
     }
   }
 
-  Loop(isLoop: boolean) {
+  SetLoop(isLoop: boolean) {
     this.#isLoop = isLoop;
     return this;
   }
@@ -100,7 +100,6 @@ export class Tween {
     this.#easingObj = easingObj;
     this.#lastEasingObj = _.cloneDeep(this.#easingObj);
     this.#fromObj = _.cloneDeep(this.#easingObj);
-    // if (this.#isToObjSet) this.#stateID = Tween.state2ID['init'];
     return this;
   }
   To(toObj: EasingObject, lasts?: number) {
@@ -109,7 +108,6 @@ export class Tween {
     this.#toObjEntries = Object.entries(toObj);
 
     if (lasts) this.#totalDuration = lasts;
-    // if (this.#isFromObjSet) this.#stateID = Tween.state2ID['init'];
     return this;
   }
 
@@ -168,14 +166,14 @@ export class Tween {
     this.#stateID = Tween.state2ID['play'];
     this.#prevTimeStamp = window.performance.now();
     this.#animFrameRequestID = window.requestAnimationFrame(this.#Loop);
-    this.#onStart();
+    this.#onStart(this);
     return this;
   }
   Pause() {
     if (!this.CanChangeStateTo('pause')) return;
 
     this.#stateID = Tween.state2ID['pause'];
-    this.#onPause();
+    this.#onPause(this);
     window.cancelAnimationFrame(this.#animFrameRequestID);
     return this;
   }
@@ -191,10 +189,12 @@ export class Tween {
     if (this.#fromObj && this.#toObj) {
       this.Reset();
     }
+    return this;
   }
   StopAnimating() {
     this.#stateID = Tween.state2ID['none'];
     this.#nowDuration = 0;
+    return this;
   }
 
   #Ease(ratio: number) {
@@ -230,7 +230,7 @@ export class Tween {
     if (this.#nowDuration >= this.#totalDuration) {
       this.#stateID = Tween.state2ID['end'];
       this.#Ease(1);
-      this.#onEnd();
+      this.#onEnd(this);
       if (this.#isLoop) {
         this.Reset();
         this.Play();
@@ -239,7 +239,7 @@ export class Tween {
       this.#Ease(this.#nowDuration / this.#totalDuration);
       this.#animFrameRequestID = window.requestAnimationFrame(this.#Loop);
     }
-    this.#onUpdate(this.#easingObj, this.#lastEasingObj);
+    this.#onUpdate(this, this.#easingObj, this.#lastEasingObj);
   }
   Update(timeStamp: number) {
     if (this.#stateID !== Tween.state2ID['play']) {
@@ -247,7 +247,7 @@ export class Tween {
       if (this.CanChangeStateTo('play')) {
         this.#stateID = Tween.state2ID['play'];
         this.#nowDuration = 0;
-        this.#onStart();
+        this.#onStart(this);
       } else return;
     }
 
@@ -258,7 +258,7 @@ export class Tween {
     if (this.#nowDuration >= this.#totalDuration) {
       this.#stateID = Tween.state2ID['end'];
       this.#Ease(1);
-      this.#onEnd();
+      this.#onEnd(this);
       if (this.#isLoop) {
         this.Reset();
         this.Play();
@@ -266,7 +266,7 @@ export class Tween {
     } else {
       this.#Ease(this.#nowDuration / this.#totalDuration);
     }
-    this.#onUpdate(this.#easingObj, this.#lastEasingObj);
+    this.#onUpdate(this, this.#easingObj, this.#lastEasingObj);
 
     return this;
   }

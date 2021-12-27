@@ -1,4 +1,4 @@
-import { Animation } from "../Components/Animation";
+import { Animator } from "../Components/Animator";
 import { Entity, EntityManager } from "../EntityManager";
 import { System } from "../System";
 
@@ -8,13 +8,15 @@ export class AnimationSystem extends System {
   }
 
   Start() {}
-  Update(timeStamp: number) {
+  Update(timeStamp: number, delta: number) {
     this._filtered = this._entityManager.GetEntitiesByFilters(this.Filter);
     this._filtered.forEach(
-      entity => (entity.GetComponent(Animation) as Animation).UpdateTweens(timeStamp)
+      entity => {
+        entity.GetComponent(Animator).Update(timeStamp, delta);
+      }
     );
   }
   Filter(entity: Entity) { 
-    return entity.HasComponent(Animation);
+    return entity.HasComponent(Animator);
   }
 }

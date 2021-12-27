@@ -1,10 +1,10 @@
 export type Opaque<K, T> = T & { __TYPE__: K };
 
-export class Pos implements Pos {
+export class Pos implements IPos {
   constructor(public x = 0, public y = 0, public z = 0) { }
 }
 
-export class Size implements Size {
+export class Size implements ISize {
   public width: number;
   public height: number;
   constructor(width: number = 150, height?: number) {
@@ -13,7 +13,7 @@ export class Size implements Size {
     else this.height = width;
   }
 }
-export class Circle implements Circle {
+export class Circle implements ICircle {
   constructor(public pos: Pos, public radius: number) { }
 }
 export class ColorStop {
@@ -123,8 +123,8 @@ export type MapTypeAllTo<T, U> = {
 };
 
 export const ErrorHelper = {
-  ClassErrMsg: function (ctor: Function, method: Function, msg: string) {
-    throw new Error(`${ctor.name}.${method.name}:  ${msg}`);
+  MethodError: function (obj: Object, msg: string) {
+    throw new Error(`${obj.constructor.name}.${arguments.callee.name}:  ${msg}`);
   },
   ErrConstructorArgs: function (ctor: Function, msg?: string) {
     if (IsType(msg, 'string')) {
@@ -135,7 +135,7 @@ export const ErrorHelper = {
   },
   RuntimeErr: function (msg: string) {
     throw new Error(msg);
-  }
+  },
 };
 
 export function RandInt(lowerBound: number, upperBound: number) {
@@ -147,4 +147,20 @@ export function Clamp(v: number, min: number, max: number) {
 export function ModClamp(v: number, lowerBound: number, upperBound: number) {
   let len = upperBound - lowerBound;
   return ((v - upperBound) % len + len) % len + lowerBound;
+}
+
+export function Simpson38(func: (x: number) => number, l: number, r: number) {
+  let lMid = l + (r - l) / 3, rMid = l + 2 * (r - l) / 3;
+  return (func(l) + 3 * func(lMid) + 3 * func(rMid) + func(r)) * (r - l) / 8;
+}
+
+export function AdaptiveSimpson38(func: (x: number) => number, l: number, r: number, eps: number = 1e-6): number {
+  let mid = l + (r - l) / 2;
+  let total = Simpson38(func, l, r),
+    left = Simpson38(func, l, mid),
+    right = Simpson38(func, mid, r);
+  let ans = left + right - total;
+  if (Math.abs(ans) <= 15 * eps) return left + right + ans / 15;
+  return AdaptiveSimpson38(func, l, mid, eps / 2)
+    + AdaptiveSimpson38(func, mid, r, eps / 2);
 }

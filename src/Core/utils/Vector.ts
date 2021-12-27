@@ -1,5 +1,5 @@
 import { Matrix } from './Matrix';
-import { ErrorHelper, IsType, IsTypePos, Pos } from './Utilities';
+import { Clamp, ErrorHelper, IsType, IsTypePos, Pos } from './Utilities';
 
 export class Vector3 {
   public static readonly zero = new Vector3(0, 0, 0);
@@ -38,7 +38,6 @@ export class Vector3 {
     }
   }
 
-
   set(vecOrNum: Vector3 | number, y?: number, z?: number): this {
     if (IsType(vecOrNum, Vector3)) {
       this.x = vecOrNum.x;
@@ -54,6 +53,15 @@ export class Vector3 {
     return this;
   }
 
+  Clamp(this: Vector3, lb: Pos, ub: Pos) {
+    return Vector3.Clamp(this, lb, ub);
+  }
+  clamp(this: Vector3, lb: Pos, ub: Pos) {
+    this.x = Clamp(this.x, lb.x, ub.x);
+    this.y = Clamp(this.y, lb.y, ub.y);
+    this.z = Clamp(this.z, lb.z, ub.z);
+    return this;
+  }
   Norm(this: Vector3) {
     return Math.sqrt(this.Dot(this));
   }
@@ -132,6 +140,9 @@ export class Vector3 {
     this.z = mat.m(2, 0) * x + mat.m(2, 1) * y + mat.m(2, 2) * z;
     return this;
   }
+  Print(this: Vector3) {
+    console.log(`(${this.x}, ${this.y}, ${this.z})`);
+  }
 
   static RandUnit2D() {
     return new Vector3(
@@ -165,10 +176,17 @@ export class Vector3 {
         Math.sin(alpha),
       );
     } else {
-      return ErrorHelper.ClassErrMsg(Vector3, Vector3.Unit, 'Wrong arguments!');
+      return ErrorHelper.MethodError(this, 'Wrong arguments!');
     }
   }
 
+  static Clamp(v1: Pos, lb: Pos, ub: Pos) {
+    return new Vector3(
+      Clamp(v1.x, lb.x, ub.x),
+      Clamp(v1.y, lb.y, ub.y),
+      Clamp(v1.z, lb.z, ub.z),
+    );
+  }
   static Equals(v1: Pos, v2: Pos) {
     return v1.x === v2.x && v1.y === v2.y && v1.z === v2.z;
   }
@@ -202,7 +220,7 @@ export class Vector3 {
   }
   static ApplyMatrix(mat: Matrix, v: Pos) {
     if (mat.col !== 3) {
-      return ErrorHelper.ClassErrMsg(Vector3, Vector3.ApplyMatrix, 'Wrong matrix!');
+      return ErrorHelper.MethodError(this, 'Wrong matrix!');
     }
     return new Vector3(
       mat.m(0, 0) * v.x + mat.m(0, 1) * v.y + mat.m(0, 2) * v.z,

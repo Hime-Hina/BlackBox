@@ -1,7 +1,6 @@
 import { InputCom } from "../Components/InputCom";
 import { Entity, EntityManager } from "../EntityManager";
 import { System } from "../System";
-import { Queue } from "../utils/Queue";
 import { Vector3 } from "../utils/Vector";
 
 export class InputSystem extends System {
@@ -9,17 +8,19 @@ export class InputSystem extends System {
   static #curMousePos = new Vector3();
   static #mouseEvent: MouseEvent;
   static #isKeyDown: Set<string> = new Set();
+  canvas: HTMLCanvasElement;
 
-  constructor(entityManager: EntityManager) {
+  constructor(entityManager: EntityManager, canvas: HTMLCanvasElement) {
     super(entityManager);
+    this.canvas = canvas;
   }
 
-  Start(canvas: HTMLCanvasElement) {
-    canvas.addEventListener('mouseup', (ev) => {
+  Start() {
+    this.canvas.addEventListener('mouseup', (ev) => {
       InputSystem.#isMouseDown = false;
       InputSystem.#mouseEvent = ev;
     });
-    canvas.addEventListener('mousedown', (ev) => {
+    this.canvas.addEventListener('mousedown', (ev) => {
       InputSystem.#isMouseDown = true;
       InputSystem.#mouseEvent = ev;
       InputSystem.#curMousePos.x = ev.offsetX;
@@ -38,8 +39,8 @@ export class InputSystem extends System {
     this._filtered = this._entityManager.GetEntitiesByFilters(this.Filter);
     InputSystem.#isKeyDown.forEach((key) => {
       this._filtered.forEach(entity => {
-        let handler = (entity.GetComponent(InputCom) as InputCom).inputEventHandlers.get(key);
-        if (handler) handler(key);
+        let handler = entity.GetComponent(InputCom).inputEventHandlers.get(key);
+        if (handler) handler(entity, key);
       });
     });
   }

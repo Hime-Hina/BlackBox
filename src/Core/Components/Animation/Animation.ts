@@ -1,12 +1,9 @@
 import _ from "lodash";
 import { Component, ComponentConstructor, ComponentID } from "../../Component";
 import { Entity } from "../../EntityManager";
-import { EasingFunction, Easings } from "../../Tween/Easings";
-import { Tween } from "../../Tween/Tween";
 import { Bezier } from "../../utils/Bezier";
 import { ErrorHelper, IsType, Size } from "../../utils/Utilities";
 import { Vector3 } from "../../utils/Vector";
-import { Transform } from "../Transform";
 
 export class Sprite {
   #spriteAtlas: HTMLImageElement;
@@ -24,27 +21,7 @@ export class Sprite {
   }
 }
 
-/**
- * 贝塞尔曲线插值
- * @param p 贝塞尔曲线的控制点，第一个和最后一个点为端点。
- * @param t 贝塞尔曲线的参数，值域为[0, 1]。
- * @returns 在p数组所确定的贝塞尔曲线上参数为t时的点。
- */
-function BezierCurve(p: Vector3[], t: number) {
-  let beta = _.cloneDeep(p);
-
-  let i = 1, j;
-  while (i < beta.length) {
-    j = 0;
-    while (j < beta.length - i) {
-      beta[j].mul(1 - t).add(beta[j + 1].Mul(t));
-      ++j;
-    }
-    ++i;
-  }
-  return beta[0];
-}
-
+type AnimableObjectPath = string | number | symbol;
 type Keyframe = {
   value: number;
   ctrlVecs: [Vector3, Vector3];
@@ -52,30 +29,77 @@ type Keyframe = {
 type Keyframes = Map<number, Keyframe>;
 type PropertyValue = {
   keyframes: Keyframes;
-  curve: number[]; // TODO: 使用TypedArray
+  curve: Float64Array; // TODO: 使用TypedArray
 };
 type Property = {
   [componentID: number]: {
-    [objPath: string | number | symbol]: {
+    [objPath: AnimableObjectPath]: {
       [propertyKey: string]: PropertyValue;
     }
   };
-  maxFrameNumber: number;
+  maxFrame: number;
+};
+type NomalizedTime = {
+  integer: number;
+  decimal: number;
 };
 export class Animation {
-  sampleRate: number = 60;
-  #entity: Entity;
-  #currentFrame: number = -1;
-  #properties: Property = { maxFrameNumber: 0 };
+  #sampleRate: number;
+  #duration: number = 0;
+  #previousUpdateFrame: number = Infinity;
+  #currentFrame: number = 0;
+  #nomalizedTime: NomalizedTime = {
+    integer: 0,
+    decimal: 0,
+  };
+  #lastNomalizedTime: NomalizedTime = {
+    integer: -Infinity,
+    decimal: -Infinity,
+  };
+  #tmp: number = 0;
+  // #entity: Entity | null = null;
+  #properties: Property = { maxFrame: 0 };
   #objects: Map<ComponentID, Map<string, any>> = new Map();
 
-
-  constructor(entity: Entity) {
-    this.#entity = entity;
+  constructor(sampleRateOrAnim?: number | Animation) {
+    if (IsType(sampleRateOrAnim, 'undefined')) {
+      this.#sampleRate = 60;
+    } else {
+      if (IsType(sampleRateOrAnim, 'number')) {
+        this.#sampleRate = sampleRateOrAnim;
+      } else {
+        this.#sampleRate = sampleRateOrAnim.#sampleRate;
+        this.#properties = _.cloneDeep(sampleRateOrAnim.#properties);
+        this.#objects = _.cloneDeep(sampleRateOrAnim.#objects);
+      }
+    }
+    this.Reset();
   }
 
+  get sampleRate() {
+    return this.#sampleRate;
+  }
+  get duration() {
+    return this.#duration;
+  }
+  get lastNomalizedTime() {
+    return this.#lastNomalizedTime;
+  }
+  get nomalizedTime() {
+    return this.#nomalizedTime;
+  }
   get properties() {
     return this.#properties;
+  }
+
+  Reset() {
+    this.#duration = 0;
+    this.#previousUpdateFrame = Infinity;
+    this.#currentFrame = 0;
+    this.#nomalizedTime.integer = 0;
+    this.#nomalizedTime.decimal = 0;
+    this.#lastNomalizedTime.integer = -Infinity;
+    this.#lastNomalizedTime.decimal = -Infinity;
   }
 
   #ClampTangentVectors(
@@ -100,7 +124,6 @@ export class Animation {
       );
     }
   }
-
   #Interplate(keyframes: Keyframes) {
     let t: number;
     let start: Vector3, end: Vector3;
@@ -108,7 +131,7 @@ export class Animation {
       nxtKeyframe: [number, Keyframe],
       preKeyframe: [number, Keyframe];
     let keyframeEntries = Array.from(keyframes.entries()).sort((a, b) => a[0] - b[0]);
-    let curve: number[] = new Array<number>(this.#properties.maxFrameNumber + 1);
+    let curve: Float64Array = new Float64Array(this.#properties.maxFrame + 1);
 
     // this.#ClampTangentVectors(null, keyframeEntries[0], keyframeEntries[1]);
     // this.#ClampTangentVectors(
@@ -163,25 +186,53 @@ export class Animation {
     console.log("curve: ", curve);
     return curve;
   }
-  AddKey(
-    this: Animation,
-    componentCtor: ComponentConstructor,
-    objPath: string, propName: string,
-    keyframes: { frameNumber: number, keyframeInfo: Omit<Keyframe, "ctrlVecs"> & { ctrlVecs: [Vector3?, Vector3?] } }[]
+  #Guard(
+    entity: Entity, componentID: ComponentID, objPath: string
   ) {
-    // guard
-    let componentID = Component.GetComponentID(componentCtor);
-    let component = this.#entity.GetComponent(componentID);
+    let component = entity.GetComponent(componentID);
     if (IsType(component, 'undefined')) {
-      return ErrorHelper.MethodError(this, `The entity ${this.#entity} does not have component ${componentCtor.name}!`);
+      console.warn(`The entity ${entity} does not have component ${Component.GetComponentCtor(componentID).name}!`);
+      return null;
     }
-    let obj = _.get(component, objPath);
+    let obj: any;
+    if (objPath === '') {
+      obj = component;
+    } else {
+      obj = _.get(component, objPath);
+    }
     if (IsType(obj, 'undefined')) {
       return ErrorHelper.MethodError(this, `The component ${component} does not have path ${objPath}!`);
     }
-    if (!(propName in obj)) {
-      return ErrorHelper.MethodError(this, `The property ${propName} does not exist in ${obj}!`);
+    return obj;
+  }
+  SetEntity(entity: Entity) {
+    // this.#entity = null;
+    this.#objects.clear();
+
+    let obj: any;
+    let componentID: ComponentID;
+    for (let componentIDKey in this.#properties) {
+      let entries: [string, any][] = [];
+      componentID = parseInt(componentIDKey) as ComponentID;
+      for (let objPath in this.#properties[componentIDKey]) {
+        obj = this.#Guard(entity, componentID, objPath);
+        if (!IsType(obj, 'null')) entries.push([objPath, obj]);
+      }
+      if (entries.length > 0) this.#objects.set(componentID, new Map(entries));
     }
+
+    // if (this.#objects.size > 0) this.#entity = entity;
+  }
+  AddKey<T extends Component>(
+    this: Animation,
+    componentCtor: ComponentConstructor<T>,
+    objPath: string, propName: string,
+    ...keyframes: {
+      frame: number;
+      keyframeInfo: Omit<Keyframe, "ctrlVecs"> & { ctrlVecs: [Vector3?, Vector3?] };
+    }[]
+  ) {
+    let componentID = Component.GetComponentID(componentCtor);
 
     for (let keyframe of keyframes) {
       // Fill the control vectors
@@ -199,16 +250,16 @@ export class Animation {
       }
 
       // set
-      this.#properties.maxFrameNumber = Math.max(keyframe.frameNumber);
+      this.#properties.maxFrame = Math.max(keyframe.frame);
       if (this.#properties.hasOwnProperty(componentID)
         && this.#properties[componentID].hasOwnProperty(objPath)
         && this.#properties[componentID][objPath].hasOwnProperty(propName)) {
-        this.#objects.get(componentID)!.set(objPath, obj);
-        this.#properties[componentID][objPath][propName].keyframes.set(keyframe.frameNumber, validKeyframe);
+        // this.#objects.get(componentID)!.set(objPath, obj);
+        this.#properties[componentID][objPath][propName].keyframes.set(keyframe.frame, validKeyframe);
       } else {
-        this.#objects.set(componentID, new Map([[objPath, obj]]));
+        // this.#objects.set(componentID, new Map([[objPath, obj]]));
         _.set(this.#properties, [componentID, objPath, propName], {
-          keyframes: new Map([[keyframe.frameNumber, validKeyframe]]),
+          keyframes: new Map([[keyframe.frame, validKeyframe]]),
           curve: [],
         });
       }
@@ -220,8 +271,10 @@ export class Animation {
     }
     return this;
   }
-  RemoveKey(
-    this: Animation, componentCtor: ComponentConstructor, objPath: string, propName: string, frameNumber: number
+  RemoveKey<T extends Component>(
+    this: Animation,
+    componentCtor: ComponentConstructor<T>, objPath: string, propName: string,
+    ...frameNumbers: number[]
   ) {
     let componentID = Component.GetComponentID(componentCtor);
     if (!this.#properties.hasOwnProperty(componentID)) {
@@ -235,43 +288,49 @@ export class Animation {
       return ErrorHelper.MethodError(this, `The property about ${componentCtor.name}.${objPath}.${propName} does not exist!!`);
     }
     let property = this.#properties[componentID][objPath][propName];
-    if (property.keyframes.has(frameNumber)) {
-      property.keyframes.delete(frameNumber);
-      for (let frameNum of property.keyframes.keys()) {
-        this.#properties.maxFrameNumber = Math.max(frameNum);
-      }
-    } else return ErrorHelper.MethodError(this, `Wrong frame number!`);
+    for (let frameNumber of frameNumbers) {
+      if (property.keyframes.has(frameNumber)) {
+        property.keyframes.delete(frameNumber);
+      } else return ErrorHelper.MethodError(this, `Wrong frame number!`);
+    }
+    for (let frameNum of property.keyframes.keys()) {
+      this.#properties.maxFrame = Math.max(frameNum);
+    }
     if (property.keyframes.size >= 2) {
       property.curve = this.#Interplate(property.keyframes);
     } else if (property.keyframes.size >= 1) {
-      property.curve = [];
+      property.curve = new Float64Array(0);
     } else {
       delete this.#properties[componentID][objPath][propName];
     }
     return this;
   }
 
-  Update(timeStamp: number, delta: number) {
-    if (this.#currentFrame > this.#properties.maxFrameNumber) {
-      this.#currentFrame = 0;
-    }
-    if (delta * this.sampleRate >= 1) {
-      let tmp1: Property[number], tmp2: Property[number][string | number | symbol];
-      for (let componentID in this.#properties) {
-        tmp1 = this.#properties[componentID];
-        for (let objPath in tmp1) {
-          tmp2 = this.#properties[componentID][objPath];
-          for (let propertyKey in tmp2) {
-            this.#objects
-              .get(Number(componentID) as ComponentID)!
-              .get(objPath)!
-            [propertyKey as keyof Property[number][string | number | symbol]]
-              = tmp2[propertyKey].curve[this.#currentFrame];
-          }
+  #UpdateObjs() {
+    let properties: Property[number][AnimableObjectPath];
+    for (let [componentID, componentProp] of this.#objects) {
+      for (let [objPath, obj] of componentProp) {
+        properties = this.#properties[componentID][objPath];
+        for (let propertyKey in properties) {
+          obj[propertyKey] = properties[propertyKey].curve[this.#currentFrame];
         }
       }
-      ++this.#currentFrame;
     }
+  }
+  Update(timeStamp: number, delta: number) {
+    if (this.#objects.size === 0) return;
+    if (this.#previousUpdateFrame !== this.#currentFrame) {
+      this.#UpdateObjs();
+      this.#previousUpdateFrame = this.#currentFrame;
+    }
+    this.#duration += delta / 1000;
+    this.#tmp = this.duration * this.#sampleRate + 0.5;
+    this.#currentFrame = Math.floor(this.#tmp % (this.#properties.maxFrame + 0.5));
+    this.#lastNomalizedTime.decimal = this.#nomalizedTime.decimal;
+    this.#lastNomalizedTime.integer = this.#nomalizedTime.integer;
+    this.#nomalizedTime.decimal = Math.floor(this.#tmp) / this.#properties.maxFrame;
+    this.#nomalizedTime.integer = Math.floor(this.#nomalizedTime.decimal);
+    this.#nomalizedTime.decimal -= this.#nomalizedTime.integer;
   }
 
 }

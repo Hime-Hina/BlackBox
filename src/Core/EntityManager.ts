@@ -21,7 +21,7 @@ export class Entity {
           hasTransform = true;
         }
         this.components.set(
-          Component.GetComponentID(component.constructor as ComponentConstructor),
+          Component.GetComponentID(component.constructor as ComponentConstructor<Component>),
           component
         );
       }
@@ -31,21 +31,25 @@ export class Entity {
     }
   }
 
-  AddComponent(this: Entity, component: Component) {
+  AddComponent<T extends Component>(this: Entity, component: T) {
     this.components.set(
-      Component.GetComponentID(component.constructor as ComponentConstructor),
+      Component.GetComponentID(component.constructor as ComponentConstructor<T>),
       component
     );
     return this;
   }
-  RemoveComponent(this: Entity, componentCtor: ComponentConstructor) {
+  RemoveComponent<T extends Component>(this: Entity, componentCtor: ComponentConstructor<T>) {
     this.components.delete(Component.GetComponentID(componentCtor));
     return this;
   }
-  GetComponent(this: Entity, componentCtor: ComponentConstructor) {
-    return this.components.get(Component.GetComponentID(componentCtor));
+  GetComponent<T extends Component>(this: Entity, componentCtorOrID: number | ComponentConstructor<T>) {
+    if (IsType(componentCtorOrID, Function)) {
+      return this.components.get(Component.GetComponentID(componentCtorOrID)) as T;
+    } else {
+      return this.components.get(componentCtorOrID as ComponentID) as T;
+    } 
   }
-  HasComponent(this: Entity, componentCtor: ComponentConstructor) {
+  HasComponent<T extends Component>(this: Entity, componentCtor: ComponentConstructor<T>) {
     return this.components.has(Component.GetComponentID(componentCtor));
   }
 }
@@ -53,7 +57,7 @@ export class Entity {
 export class EntityManager {
   protected _entities: Map<string, Entity> = new Map();
 
-  constructor() {}
+  constructor() { }
 
   CreateEntity(this: EntityManager, components?: Component[]) {
     let uuid = GetUUID();

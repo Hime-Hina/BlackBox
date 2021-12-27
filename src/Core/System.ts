@@ -14,7 +14,7 @@ export abstract class System {
 
   abstract Start(...args: any[]): void;
 
-  abstract Update(time: number, deltaTime?: number): void;
+  abstract Update(timeStamp: number, delta?: number): void;
 
   abstract Filter(entity: Entity): boolean;
 }

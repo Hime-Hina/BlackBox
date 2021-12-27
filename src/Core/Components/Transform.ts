@@ -1,5 +1,5 @@
 import { Component } from "../Component";
-import { ModClamp, ErrorHelper, IsType, IsTypePos } from "../utils/Utilities";
+import { ModClamp, ErrorHelper, IsType, IsTypePos, Pos } from "../utils/Utilities";
 import { Vector3 } from "../utils/Vector";
 
 export interface ITransform {
