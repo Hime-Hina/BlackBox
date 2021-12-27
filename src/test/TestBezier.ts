@@ -1,6 +1,8 @@
-import { Renderer } from "../Game/Renderer/Renderer";
-import { Bezier } from "../Game/utils/Bezier";
-import { Vector3 } from "../Game/utils/Vector";
+import { Circle } from "../Core/Renderer/Geometry/Circle";
+import { Renderer } from "../Core/Renderer/Renderer";
+import { Bezier } from "../Core/utils/Bezier";
+import { Pos } from "../Core/utils/Utilities";
+import { Vector3 } from "../Core/utils/Vector";
 
 export class BezierTester {
   static Test1() {
@@ -18,10 +20,7 @@ export class BezierTester {
 
     let ps = b.Trace(10);
     for (let p of ps) {
-      renderer.DrawArc({
-        center: p,
-        width: 1
-      });
+      renderer.DrawGeometry(new Circle(p, 2))
     }
   }
 }

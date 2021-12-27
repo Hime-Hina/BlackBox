@@ -1,10 +1,10 @@
-import { Easings } from "../Game/Tween/Easings";
-import { Renderable } from "../Game/Components/Renderable";
-import { Transform } from "../Game/Components/Transform";
-import { Entity, EntityManager } from "../Game/EntityManager";
-import { RenderingSystem } from "../Game/Systems/RenderingSystem";
-import { RandInt, Size } from "../Game/utils/Utilities";
-import { Vector3 } from "../Game/utils/Vector";
+import { Easings } from "../Core/Tween/Easings";
+import { Shape } from "../Core/Components/Shape";
+import { Transform } from "../Core/Components/Transform";
+import { Entity, EntityManager } from "../Core/EntityManager";
+import { RenderingSystem } from "../Core/Systems/RenderingSystem";
+import { RandInt, Size } from "../Core/utils/Utilities";
+import { Vector3 } from "../Core/utils/Vector";
 
 let canvas = document.getElementById('canvas') as HTMLCanvasElement;
 

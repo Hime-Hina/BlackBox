@@ -1,152 +1,215 @@
-import { Component } from "../Game/Component";
-import { Animation } from "../Game/Components/Animation/Animation";
-import { Animator } from "../Game/Components/Animator";
-import { AnimatorController } from "../Game/Components/AnimatorController";
-import { Renderable } from "../Game/Components/Renderable";
-import { Transform } from "../Game/Components/Transform";
-import { EntityManager } from "../Game/EntityManager";
-import { Renderer } from "../Game/Renderer/Renderer";
-import { Easings } from "../Game/Tween/Easings";
-import { Tween } from "../Game/Tween/Tween";
-import { Size } from "../Game/utils/Utilities";
-import { Vector3 } from "../Game/utils/Vector";
+import { Component } from "../Core/Component";
+import { Animation } from "../Core/Components/Animation/Animation";
+import { Animator } from "../Core/Components/Animator";
+import { AnimatorController, Condition, IsFalse, IsTrue, Parameter, State, Transition } from "../Core/Components/AnimatorController";
+import { Shape } from "../Core/Components/Shape";
+import { Transform } from "../Core/Components/Transform";
+import { EntityManager } from "../Core/EntityManager";
+import { GeometryGroup } from "../Core/Renderer/Geometry/GeometryGroup";
+import { Rectangle } from "../Core/Renderer/Geometry/Rectangle";
+import { Renderer } from "../Core/Renderer/Renderer";
+import { Easings } from "../Core/Tween/Easings";
+import { Tween } from "../Core/Tween/Tween";
+import { Pos, Size } from "../Core/utils/Utilities";
+import { Vector3 } from "../Core/utils/Vector";
 
 export class AnimationTester {
   static Test1() {
     let entityM = new EntityManager();
 
     entityM.CreateEntity([
-      new Renderable(Renderable.Rect(new Size(200, 100))),
+      new Shape().AddGeometries(new GeometryGroup(new Pos, new Rectangle(new Pos, new Size(100, 200)))),
       new Animator(new AnimatorController()),
     ]);
   }
   static Test2() {
-    let entityM = new EntityManager();
-    let entity = entityM.CreateEntity([
-      new Renderable(Renderable.Rect(new Size(200, 100))),
-    ]);
-
-    let anim = new Animation(entity);
-    anim.AddKey(Transform, 'glbPosition', 'x', [
+    let animMoving = new Animation();
+    animMoving.AddKey(
+      Transform, 'glbPosition', 'x',
       {
-        frameNumber: 10,
+        frame: 10,
         keyframeInfo: {
           value: 8,
           ctrlVecs: [undefined, new Vector3(80, 0)],
         }
       }, {
-        frameNumber: 20,
-        keyframeInfo: {
-          value: 100,
-          ctrlVecs: [new Vector3(30, 0)],
-        }
-      }, {
-        frameNumber: 30,
-        keyframeInfo: {
-          value: 80,
-          ctrlVecs: [new Vector3(20, 0)],
-        }
-      }, {
-        frameNumber: 40,
-        keyframeInfo: {
-          value: 60,
-          ctrlVecs: [new Vector3(200, 0)],
-        }
-      }, {
-        frameNumber: 60,
-        keyframeInfo: {
-          value: 200,
-          ctrlVecs: [],
-        }
+      frame: 20,
+      keyframeInfo: {
+        value: 100,
+        ctrlVecs: [new Vector3(30, 0)],
       }
-    ]);
-
-    let renderer = new Renderer(document.getElementById('canvas') as HTMLCanvasElement);
-
-    renderer.Translate({ x: 0, y: renderer.ctx.canvas.height, z: 0 });
-    renderer.Scale({ x: 1, y: -1, z: 0 });
-
-    let scale = 10;
-    let pos: Vector3;
-    let curve = anim.properties[Component.GetComponentID(Transform)]['glbPosition']['x'].curve;
-    let keyframes = Array.from(anim.properties[Component.GetComponentID(Transform)]['glbPosition']['x'].keyframes.entries());
-    for (let i = 0, j = 0; i < curve.length; ++i) {
-      pos = new Vector3(scale * (i + 10), curve[i] + 100);
-      if (j < keyframes.length && keyframes[j][0] === i) {
-        renderer.DrawArc({
-          center: pos,
-          width: 3,
-        }, {style: {fill: 'yellow'}});
-        renderer.DrawArc({
-          center: pos.Add(new Vector3(scale * keyframes[j][1].ctrlVecs[0].x, keyframes[j][1].ctrlVecs[0].y)),
-          width: 3,
-        }, { style: { fill: 'blue' } });
-        renderer.DrawArc({
-          center: pos.Add(new Vector3(scale * keyframes[j][1].ctrlVecs[1].x, keyframes[j][1].ctrlVecs[1].y)),
-          width: 3,
-        }, { style: { fill: 'red' } });
-        ++j;
+    }, {
+      frame: 30,
+      keyframeInfo: {
+        value: 80,
+        ctrlVecs: [new Vector3(20, 0)],
       }
-      renderer.DrawArc({
-        center: pos,
-        width: 1,
-      });
+    }, {
+      frame: 40,
+      keyframeInfo: {
+        value: 60,
+        ctrlVecs: [new Vector3(200, 0)],
+      }
+    }, {
+      frame: 60,
+      keyframeInfo: {
+        value: 200,
+        ctrlVecs: [],
+      }
+    });
+    animMoving.AddKey(
+      Transform, 'glbPosition', 'y',
+      {
+        frame: 10,
+        keyframeInfo: {
+          value: 8,
+          ctrlVecs: [undefined, new Vector3(80, 0)],
+        }
+      }, {
+      frame: 20,
+      keyframeInfo: {
+        value: 100,
+        ctrlVecs: [new Vector3(30, 0)],
+      }
+    }, {
+      frame: 30,
+      keyframeInfo: {
+        value: 80,
+        ctrlVecs: [new Vector3(20, 0)],
+      }
+    }, {
+      frame: 40,
+      keyframeInfo: {
+        value: 60,
+        ctrlVecs: [new Vector3(200, 0)],
+      }
+    }, {
+      frame: 60,
+      keyframeInfo: {
+        value: 200,
+        ctrlVecs: [],
+      }
+    });
+    let animIdle = new Animation();
+    animIdle.AddKey(
+      Transform, 'scale', 'x',
+      {
+        frame: 0,
+        keyframeInfo: {
+          value: 1,
+          ctrlVecs: []
+        }
+      }, {
+      frame: 30,
+      keyframeInfo: {
+        value: 2,
+        ctrlVecs: []
+      }
+    }, {
+      frame: 60,
+      keyframeInfo: {
+        value: 1,
+        ctrlVecs: []
+      }
     }
-  }
-  static Test3() {
+    );
+    animIdle.AddKey(
+      Transform, 'scale', 'y',
+      {
+        frame: 0,
+        keyframeInfo: {
+          value: 1,
+          ctrlVecs: []
+        }
+      }, {
+      frame: 30,
+      keyframeInfo: {
+        value: 2,
+        ctrlVecs: []
+      }
+    }, {
+      frame: 60,
+      keyframeInfo: {
+        value: 1,
+        ctrlVecs: []
+      }
+    }
+    );
+
+    let animController = new AnimatorController();
+    let asm = animController.GetASM();
+
+    animController.AddParameter(new Parameter(Boolean, 'move'));
+
+    asm.AddState(
+      new State('Idle', animIdle),
+      new State('Move', animMoving),
+    );
+    asm.AddTransition(
+      new Transition(
+        asm.GetState('Entry'),
+        asm.GetState('Idle'),
+        {
+          // exitTime: 0
+          hasExitTime: false
+        }
+      ),
+      new Transition(
+        asm.GetState('Idle'),
+        asm.GetState('Move'),
+        {
+          conditions: [
+            new Condition(animController.GetParameter<BooleanConstructor>('move'), IsTrue),
+          ]
+        }
+      ),
+      new Transition(
+        asm.GetState('Move'),
+        asm.GetState('Idle'),
+        {
+          exitTime: 0.9,
+          conditions: [
+            new Condition(animController.GetParameter<BooleanConstructor>('move'), IsFalse),
+          ]
+        }
+      ),
+    );
+
     let entityM = new EntityManager();
     let entity = entityM.CreateEntity([
-      new Renderable(Renderable.Rect(new Size(200, 100))),
+      new Shape().AddGeometries([new Rectangle(new Pos, new Size(100, 200))]),
+      new Animator(new AnimatorController()),
     ]);
 
-    let anim = new Animation(entity);
-    anim.AddKey(Transform, 'glbPosition', 'x', [
-      {
-        frameNumber: 10,
-        keyframeInfo: {
-          value: 8,
-          ctrlVecs: [undefined, new Vector3(80, 0)],
-        }
-      }, {
-        frameNumber: 20,
-        keyframeInfo: {
-          value: 100,
-          ctrlVecs: [new Vector3(30, 0)],
-        }
-      }, {
-        frameNumber: 30,
-        keyframeInfo: {
-          value: 80,
-          ctrlVecs: [new Vector3(20, 0)],
-        }
-      }, {
-        frameNumber: 40,
-        keyframeInfo: {
-          value: 60,
-          ctrlVecs: [new Vector3(200, 0)],
-        }
-      }, {
-        frameNumber: 60,
-        keyframeInfo: {
-          value: 200,
-          ctrlVecs: [],
-        }
-      }
-    ]);
+    animMoving.SetEntity(entity);
+    animIdle.SetEntity(entity);
 
     let lastTime = 0;
     let renderer = new Renderer(document.getElementById('canvas') as HTMLCanvasElement);
     function animate(t: number) {
+      (entity.GetComponent(Animator) as Animator).Update(t, t - lastTime);
       renderer.ClearCanvas();
       renderer.With(() => {
         renderer.Translate(entity.transform.glbPosition);
-        renderer.DrawPath((entity.GetComponent(Renderable) as Renderable).path);
+        renderer.Scale(entity.transform.scale);
       });
-      anim.Update(t, t - lastTime);
+
+      lastTime = t;
       requestAnimationFrame(animate);
     }
 
-    requestAnimationFrame(animate);
+    window.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        animController.SetBool('move', true);
+      }
+    });
+    window.addEventListener('keyup', (ev) => {
+      if (ev.key === 'Enter') {
+        animController.SetBool('move', false);
+      }
+    });
+
     lastTime = window.performance.now();
+    requestAnimationFrame(animate);
   }
 }

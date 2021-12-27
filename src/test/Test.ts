@@ -1,11 +1,11 @@
 import { GameMap, ObjInMap } from "../Pacman/Components/ObjInMap";
-import { Renderable } from "../Game/Components/Renderable";
-import { Transform } from "../Game/Components/Transform";
-import { EntityManager } from "../Game/EntityManager";
-import { Renderer } from "../Game/Renderer/Renderer";
-import { RenderingSystem } from "../Game/Systems/RenderingSystem";
-import { Pos, Size } from "../Game/utils/Utilities";
-import { Vector3 } from "../Game/utils/Vector";
+import { Shape } from "../Core/Components/Shape";
+import { Transform } from "../Core/Components/Transform";
+import { EntityManager } from "../Core/EntityManager";
+import { Renderer } from "../Core/Renderer/Renderer";
+import { RenderingSystem } from "../Core/Systems/RenderingSystem";
+import { Pos, Size } from "../Core/utils/Utilities";
+import { Vector3 } from "../Core/utils/Vector";
 
 let canvas = document.getElementById('canvas') as HTMLCanvasElement;
 let renderer = new Renderer(canvas);
@@ -28,8 +28,4 @@ export function Test1() {
 export function Test2() {
   renderer.Translate(new Pos(80, 80));
   renderer.Rotate(-Math.PI / 3);
-  renderer.DrawRect({
-    center: new Vector3(),
-    size: new Size(200, 100)
-  });
 }

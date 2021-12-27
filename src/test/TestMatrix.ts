@@ -1,4 +1,4 @@
-import { Matrix } from "../Game/utils/Matrix";
+import { Matrix } from "../Core/utils/Matrix";
 
 export class MatrixTester {
   static TestCreate() {
